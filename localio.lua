@@ -63,6 +63,10 @@ local isAbsPath = function(path)
 	return false
 end
 
+io.isAbsPath = function(path)
+	return isAbsPath(path)
+end
+
 local function getCallStack()
 	local t = {}
 

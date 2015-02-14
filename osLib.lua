@@ -42,8 +42,10 @@ end
 
 local tempCallsDir = io.toAbsPath([[tempCalls\]])
 
+createDir(tempCallsDir)
+
 --os.execute(string.format('rd 2>NUL %s /s /q', tempCallsDir:quote()))
-os.execute(string.format('mkdir 2>NUL %s', tempCallsDir:quote()))
+--os.execute(string.format('mkdir 2>NUL %s', tempCallsDir:quote()))
 
 local function toDOS(val)
 	assert(val, 'no value')
