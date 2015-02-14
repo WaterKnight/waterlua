@@ -1,0 +1,3 @@
+require 'waterlua'
+
+osLib.clearTempCalls()
