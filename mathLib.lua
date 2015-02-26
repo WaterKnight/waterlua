@@ -42,3 +42,24 @@ function setDigits(val, digits)
 
 	return string.rep('0', digits - countDigits(val))..val
 end
+
+local pow2Table = {}
+
+for i = -256, 256, 1 do
+	pow2Table[i] = math.pow(2, i)
+end	
+
+function pow2(i)
+	return pow2Table[i]
+end
+
+local pow256Table = {}
+
+for i = 0, 4, 1 do
+	pow256Table[i] = math.pow(256, i)
+end	
+
+function pow256(i)
+	return pow256Table[i]
+end
+

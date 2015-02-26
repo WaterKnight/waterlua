@@ -1,7 +1,7 @@
 function configParser(path)
 	assert(path, 'configParser: no path passed')
 
-	path = io.toAbsPath(path, 1)
+	path = io.toAbsPath(path, io.local_dir(1))
 
 	local f = io.open(path, 'r')
 

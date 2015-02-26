@@ -4,14 +4,12 @@ require 'stringLib'
 function getFileName(path, noExtension)
 	assert(path, 'no path')
 
-	while path:find("\\") do
-		path = path:sub(path:find("\\") + 1)
-	end
+	path = path:gsub('/', '\\')
+
+	path = path:match('\\([^\\]*)$') or path
 
 	if noExtension then
-		if path:lastFind('%.') then
-			path = path:sub(1, path:lastFind('%.') - 1)
-		end
+		path = path:match('([^%..]*)')
 	end
 
 	return path
@@ -20,15 +18,11 @@ end
 function getFolder(path)
 	assert(path, 'no path')
 
-	local res = ""
+	path = path:gsub('/', '\\')
 
-	while path:find("\\") do
-		res = res..path:sub(1, path:find("\\"))
+	path = path:match('(.*\\)')
 
-		path = path:sub(path:find("\\") + 1)
-	end
-
-	return res
+	return path
 end
 
 function getFileExtension(path)
@@ -85,10 +79,24 @@ local function getCallStack()
 	return t
 end
 
-local toAbsPath = function(path, level)
-	if (level == nil) then
-		level = 0
+local function toFolderPath(path, shortened)
+	assert(path, 'no path')
+
+	path = path:gsub('/', '\\')
+
+	if shortened then
+		path = path:match('(.*)\\$') or path
+	else
+		if not path:match('\\$') then
+			path = path..'\\'
+		end
 	end
+
+	return path
+end
+
+local toAbsPath = function(path, basePath)
+	assert(path, 'no path')
 
 	path = path:gsub('/', '\\')
 
@@ -96,25 +104,13 @@ local toAbsPath = function(path, level)
 		return path
 	end
 
-	local scriptPath = getCallStack()[2+level].source
---for i=1, #getCallStack(), 1 do
---	print(i, getCallStack()[i].source)
---end
---print('pick '..(2+level))
+	--local scriptDir = getFolder(scriptPath:gsub('/[^/]+$', ''))
 
-	scriptPath = scriptPath:match('^@(.*)$')
-
-	while ((scriptPath:find('.', 1, true) == 1) or (scriptPath:find('\\', 1, true) == 1)) do
-		scriptPath = scriptPath:sub(2)
+	if (basePath == nil) then
+		basePath = io.curDir()
 	end
 
-	local scriptDir = getFolder(scriptPath:gsub('/[^/]+$', ''))
-
-	if (scriptDir == '') then
-		scriptDir = io.curDir()
-	end
-
-	local result = scriptDir
+	local result = toFolderPath(basePath)
 
 	while (path:find('..\\') == 1) do
 		result = result:reduceFolder()
@@ -127,32 +123,46 @@ local toAbsPath = function(path, level)
 	return result
 end
 
-io.toAbsPath = function(path, level)
-	if (level == nil) then
-		level = 0
-	end
-
-	local result = toAbsPath(path, level + 1)
+io.toAbsPath = function(path, basePath)
+	local result = toAbsPath(path, basePath)
 
 	return result
 end
 
 io.curDir = function()
-	return lfs.currentdir()..'\\'
+	return toFolderPath(lfs.currentdir())
 end
 
-io.local_dir = function()
-	local result = toAbsPath('', 1)
+io.local_dir = function(level)
+	if (level == nil) then
+		level = 0
+	end
 
-	return result
+	local path = getCallStack()[2 + level].source
+
+	path = path:match('^@(.*)$')
+
+	while ((path:find('.', 1, true) == 1) or (path:find('\\', 1, true) == 1)) do
+		path = path:sub(2)
+	end
+
+	path = path:gsub('/', '\\')
+
+	path = path:match('(.*\\)') or ''
+
+	if not io.isAbsPath(path) then
+		path = io.curDir()..path
+	end
+
+	return path
 end
 
 io.pathExists = function(path)
-	return (lfs.attributes(toAbsPath(path, 1)) ~= nil)
+	return (lfs.attributes(toAbsPath(path, io.local_dir(1))) ~= nil)
 end
 
 io.pathIsFile = function(path)
-	return (lfs.attributes(toAbsPath(path, 1), 'mode') == 'file')
+	return (lfs.attributes(toAbsPath(path, io.local_dir(1)), 'mode') == 'file')
 end
 
 io.pathIsOpenable = function(path)
@@ -168,7 +178,7 @@ io.pathIsOpenable = function(path)
 end
 
 io.local_require = function(path1)
-	local path = toAbsPath(path1, 1)
+	local path = toAbsPath(path1, io.local_dir(1))
 
 	if package.loaded[path] then
 		return
@@ -186,12 +196,12 @@ io.local_require = function(path1)
 end
 
 io.local_open = function(path, options)
---print('local_open', path, toAbsPath(path, 1))
-	return io.open(toAbsPath(path, 1), options)
+--print('local_open', path, toAbsPath(path, io.local_dir(1)))
+	return io.open(toAbsPath(path, io.local_dir(1)), options)
 end
 
 io.local_loadfile = function(path)
-	return loadfile(toAbsPath(path, 1))
+	return loadfile(toAbsPath(path, io.local_dir(1)))
 end
 
 --print(os.getenv('LUA_PATH'):split(';'))
@@ -212,6 +222,8 @@ function isFolderPath(path)
 end
 
 string.reduceFolder = function(s, amount)
+	assert(s, 'no path')
+
 	if (amount == nil) then
 		amount = 1
 	end
@@ -220,15 +232,14 @@ string.reduceFolder = function(s, amount)
 		return s
 	end
 
-	return string.reduceFolder(getFolder(s:sub(1, getFolder(s):len() - 1))..getFileName(s), amount - 1)
-end
+	local dir = getFolder(s:sub(1, getFolder(s):len() - 1))
+	local fileName = getFileName(s)
 
-local function toFolderPath(path)
-	if (path:sub(path:len()) == '\\') then
-		return path
+	if (dir == nil) then
+		return fileName
 	end
 
-	return path..'\\'
+	return string.reduceFolder(dir..fileName, amount - 1)
 end
 
 function getFiles(dir, filePath)
@@ -282,8 +293,8 @@ function copyDir3(source, target)
 end
 
 function copyFile(source, target, overwrite)
-	source = toAbsPath(source, 1)
-	target = toAbsPath(target, 1)
+	source = toAbsPath(source, io.local_dir(1))
+	target = toAbsPath(target, io.local_dir(1))
 
 	createDir(getFolder(target))
 
@@ -326,8 +337,8 @@ end
 
 function copyDir2(source, target)
 	--os.execute([[xcopy ]]..source:quote()..[[ ]]..target:quote()..[[ /e /i /y /q]])
-	source = io.toAbsPath(source, 1)
-	target = io.toAbsPath(target, 1)
+	source = io.toAbsPath(source, io.local_dir(1))
+	target = io.toAbsPath(target, io.local_dir(1))
 
 	assert(source, 'copyDir: no source', source)
 	assert(target, 'copyDir: no target', target)
@@ -354,8 +365,8 @@ function copyDir(source, target, overwrite)
 	source = toFolderPath(source)
 	target = toFolderPath(target)
 
-	source = io.toAbsPath(source, 1)
-	target = io.toAbsPath(target, 1)
+	source = io.toAbsPath(source, io.local_dir(1))
+	target = io.toAbsPath(target, io.local_dir(1))
 
 	assert(source, 'copyDir: no source', source)
 	assert(target, 'copyDir: no target', target)
@@ -393,7 +404,7 @@ function copyDir(source, target, overwrite)
 end
 
 function getFilesEx(path)
-	path = toAbsPath(path, 1)
+	path = toAbsPath(path, io.local_dir(1))
 
 	local iter = lfs.dir(path)
 
@@ -415,13 +426,13 @@ function getFilesEx(path)
 end
 
 function removeFile(path)
-	path = toAbsPath(path, 1)
+	path = toAbsPath(path, io.local_dir(1))
 
 	os.remove(path)
 end
 
 function removeDir(path)
-	path = toAbsPath(path, 1)
+	path = toAbsPath(path, io.local_dir(1))
 
 	assert(isFolderPath(path), 'removeDir: path is no directory '..tostring(path))
 
@@ -444,22 +455,20 @@ end
 function createDir(path)
 	assert(path, 'no path')
 
-	path = toAbsPath(path, 1)
+	path = toAbsPath(path, io.local_dir(1))
 
 	assert(isFolderPath(path), 'createDir: path is no directory '..tostring(path))
 
 	local function nest(path)
-		if ((path == nil) or (path == '') or lfs.mkdir(path)) then
+		local p = toFolderPath(path, true)
+
+		if ((path == nil) or (path == '') or lfs.mkdir(p)) then
 			return
 		end
 
 		nest(path:reduceFolder())
 
-		if (path:sub(path:len(), path:len()) == '\\') then
-			path = path:sub(1, path:len() - 1)
-		end
-
-		local result, errorMsg = lfs.mkdir(path)
+		local result, errorMsg = lfs.mkdir(p)
 
 		--print('result', result, errorMsg)
 	end
@@ -470,7 +479,7 @@ end
 function flushDir(path)
 	assert(path, 'no path')
 
-	path = toAbsPath(path, 1)
+	path = toAbsPath(path, io.local_dir(1))
 
 	assert(isFolderPath(path), 'recreateDir: path is no directory '..tostring(path))
 

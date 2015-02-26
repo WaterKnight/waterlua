@@ -40,7 +40,7 @@ os.setLogPaths = function(path, detailedPath)
 	logDetailedPath = detailedPath
 end
 
-local tempCallsDir = io.toAbsPath([[tempCalls\]])
+local tempCallsDir = io.toAbsPath([[tempCalls\]], io.local_dir())
 
 createDir(tempCallsDir)
 
@@ -233,7 +233,7 @@ osLib.waitForKeystroke = function()
 end
 
 osLib.runProg = function(interpreter, path, args, options, doNotWait)
-	path = io.toAbsPath(path, 1)
+	path = io.toAbsPath(path, io.local_dir(1))
 
 	local folder = getFolder(path)
 	local fileName = getFileName(path)
@@ -294,6 +294,6 @@ osLib.exit = function(val)
 end
 
 osLib.clearTempCalls = function()
-	removeDir([[tempCalls\]])
+	removeDir(tempCallsDir)
 	io.setGlobal('tempC')
 end
