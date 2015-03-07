@@ -95,6 +95,10 @@ local function toFolderPath(path, shortened)
 	return path
 end
 
+io.toFolderPath = function(path, shortened)
+	return toFolderPath(path, shortened)
+end
+
 local toAbsPath = function(path, basePath)
 	assert(path, 'no path')
 
@@ -175,6 +179,22 @@ io.pathIsOpenable = function(path)
 	f:close()
 
 	return result
+end
+
+io.pathIsLocked = function(path)
+	if not io.pathExists(path) then
+		return true
+	end
+
+	local f = io.open(path, 'a')
+
+	if (f ~= nil) then
+		f:close()
+
+		return false
+	end
+
+	return true
 end
 
 io.local_require = function(path1)
@@ -314,10 +334,34 @@ function copyFile(source, target, overwrite)
 	assert(sourceFile, 'copyFile: cannot open source '..tostring(source))
 	assert(targetFile, 'copyFile: cannot open target '..tostring(target))
 
-	targetFile:write(sourceFile:read("*a"))
+	local bufSize = 10000
+	local fileSize = io.getFileSize(source)
+
+	while (fileSize > 0) do
+		targetFile:write(sourceFile:read(math.min(bufSize, fileSize)))
+
+		fileSize = fileSize - bufSize
+	end
 
 	sourceFile:close()
 	targetFile:close()
+end
+
+function copyFileIfNewer(source, target)
+	source = toAbsPath(source, io.local_dir(1))
+	target = toAbsPath(target, io.local_dir(1))
+
+	local targetMod = lfs.attributes(target, 'modification')
+
+	if targetMod then
+		local sourceMod = lfs.attributes(source, 'modification')
+
+		if (targetMod >= sourceMod) then
+			return
+		end
+	end
+
+	copyFile(source, target, true)
 end
 
 function copyFile2(source, target)
