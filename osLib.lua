@@ -26,7 +26,15 @@ osLib.createTimer = function()
 end
 
 osLib.clearScreen = function()
+	io.flush(io.stdout)
+	io.flush(io.stderr)
+
 	os.execute('cls')
+
+	print('clearing screen...')
+
+	io.flush(io.stdout)
+	io.flush(io.stderr)
 end
 
 os.setLogPaths = function(path, detailedPath)
@@ -149,25 +157,29 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 		--lines[#lines + 1] = cmd
 		lines[#lines + 1] = 'echo success > '..successFilePath:quote()
 
+		lines[#lines + 1] = 'set ERRORLEVEL='
+
 		if name then
 			lines[#lines + 1] = '@echo | call '..cmd
 		else
 			lines[#lines + 1] = cmd
 		end
 
-		lines[#lines + 1] = 'if errorlevel 1 del '..successFilePath:quote()
+		lines[#lines + 1] = 'if %ERRORLEVEL% NEQ 0 del '..successFilePath:quote()
 
 		lines[#lines + 1] = 'exit'
 	else
 		lines[#lines + 1] = 'echo success > '..successFilePath:quote()
 
+		lines[#lines + 1] = 'set ERRORLEVEL='
+
 		if name then
 			lines[#lines + 1] = '@echo | call '..cmd
 		else
 			lines[#lines + 1] = cmd
 		end
 
-		lines[#lines + 1] = 'if errorlevel 1 del '..successFilePath:quote()
+		lines[#lines + 1] = 'if %ERRORLEVEL% NEQ 0 del '..successFilePath:quote()
 
 		lines[#lines + 1] = 'exit'
 	end
@@ -186,7 +198,7 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 
 		--result = io.getGlobal('success')
 		result = io.pathExists(successFilePath)
-
+print(successFilePath)
 		io.setGlobal('success', nil)
 	end
 
@@ -232,7 +244,7 @@ osLib.waitForKeystroke = function()
 	return result
 end
 
-osLib.runProg = function(interpreter, path, args, options, doNotWait)
+osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder)
 	path = io.toAbsPath(path, io.local_dir(1))
 
 	local folder = getFolder(path)
@@ -256,14 +268,18 @@ osLib.runProg = function(interpreter, path, args, options, doNotWait)
 		args[1] = fileName
 	end
 
+	if (fromFolder == nil) then
+		fromFolder = folder
+	end
+
 	local t = osLib.createTimer()
 
 	print('run '..path)
 
 	if interpreter then
-		result = osLib.run(interpreter, args, options, folder, doNotWait, nil)
+		result = osLib.run(interpreter, args, options, fromFolder, doNotWait, nil)
 	else
-		result = osLib.run(fileName, args, options, folder, doNotWait, path)
+		result = osLib.run(path, args, options, fromFolder, doNotWait, path)
 	end
 
 	if log then
