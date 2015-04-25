@@ -292,6 +292,14 @@ function changeWorkingDir(path)
 	os.execute([[cd /d ]]..path:quote())
 end
 
+function moveFile(sourcePath, targetPath)
+	os.execute(string.format([[move %q %q]], sourcePath, targetPath))
+end
+
+function renameFile(sourcePath, targetPath)
+	os.execute(string.format([[rename %q %q]], sourcePath, targetPath))
+end
+
 function copyFile3(source, target)
 	local sourceFile = io.open(source, "rb")
 	local targetFile = io.open(target, "w+b")
@@ -579,4 +587,16 @@ io.getFileSize = function(path)
 	assert(io.pathIsOpenable(path), 'cannot open '..tostring(path))
 
 	return lfs.attributes(path, 'size')
+end
+
+function syntaxCheck(path)
+	assert(path, 'no path')
+
+	local ring = rings.new()
+
+	ring:dostring('package.path = '..valToLua(getFolder(path)..'?.lua'))
+
+	local res, msg, trace = ring:dostring('require '..valToLua(getFileName(path, true)))
+
+	return res, msg, trace
 end

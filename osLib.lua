@@ -153,6 +153,14 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 
 	local successFilePath = tempCallsDir..[[success]]
 
+	local returnOutputFilePath = tempCallsDir..[[outMsg.txt]]
+	local returnErrorMsgFilePath = tempCallsDir..[[errorMsg.txt]]
+
+	removeFile(returnOutputFilePath)
+	removeFile(returnErrorMsgFilePath)
+
+	cmd = cmd..' 1>'..returnOutputFilePath:quote()..' 2>'..returnErrorMsgFilePath:quote()
+
 	if doNotWait then
 		--lines[#lines + 1] = cmd
 		lines[#lines + 1] = 'echo success > '..successFilePath:quote()
@@ -198,7 +206,7 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 
 		--result = io.getGlobal('success')
 		result = io.pathExists(successFilePath)
-print(successFilePath)
+
 		io.setGlobal('success', nil)
 	end
 
@@ -219,7 +227,26 @@ print(successFilePath)
 
 	os.execute('@echo ON')
 
-	return result
+	local errorMsg = nil
+	local outMsg = nil
+
+	local f = io.open(returnOutputFilePath, 'r')
+
+	if (f ~= nil) then
+		outMsg = f:read('*a')
+
+		f:close()
+	end
+
+	local f = io.open(returnErrorMsgFilePath, 'r')
+
+	if (f ~= nil) then
+		errorMsg = f:read('*a')
+
+		f:close()
+	end
+
+	return result, errorMsg, outMsg
 end
 
 osLib.waitForKeystroke = function()
@@ -276,10 +303,14 @@ osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder
 
 	print('run '..path)
 
+	local result = nil
+	local errorMsg = nil
+	local outMsg = nil
+
 	if interpreter then
-		result = osLib.run(interpreter, args, options, fromFolder, doNotWait, nil)
+		result, errorMsg, outMsg = osLib.run(interpreter, args, options, fromFolder, doNotWait, nil)
 	else
-		result = osLib.run(path, args, options, fromFolder, doNotWait, path)
+		result, errorMsg, outMsg = osLib.run(path, args, options, fromFolder, doNotWait, path)
 	end
 
 	if log then
@@ -298,7 +329,7 @@ osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder
 
 	io.write(' - '..math.cutFloat(t:getElapsed())..'seconds, '..resultMsg..'\n')
 
-	return result
+	return result, errorMsg, outMsg
 end
 
 osLib.exit = function(val)
