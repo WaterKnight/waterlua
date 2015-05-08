@@ -293,11 +293,11 @@ function changeWorkingDir(path)
 end
 
 function moveFile(sourcePath, targetPath)
-	os.execute(string.format([[move %q %q]], sourcePath, targetPath))
+	os.execute(string.format([[move 1>NUL 2>NUL %q %q]], sourcePath, targetPath))
 end
 
 function renameFile(sourcePath, targetPath)
-	os.execute(string.format([[rename %q %q]], sourcePath, targetPath))
+	os.execute(string.format([[rename 1>NUL 2>NUL %q %q]], sourcePath, targetPath))
 end
 
 function copyFile3(source, target)
