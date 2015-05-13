@@ -1,10 +1,14 @@
 local packagePath = package.path
+local packageCPath = package.cpath
 
-package.path = debug.getinfo(1, 'S').source:sub(2):match('(.*'..'\\'..')')..'?.lua'
---..'waterlua\\?.lua'
+local localDir = debug.getinfo(1, 'S').source:sub(2):match('(.*'..'\\'..')')
+
+package.path = localDir..'?.lua'..';'..packagePath
+package.cpath = localDir..'?.dll'..';'..packageCPath
 
 require 'bit'
 require 'rings'
+
 
 require 'localio'
 
@@ -15,3 +19,4 @@ require 'stringLib'
 require 'tableLib'
 
 package.path = packagePath
+package.cpath = packageCPath
