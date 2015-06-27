@@ -15,7 +15,7 @@ function tableToLua(t)
 
 	for k, v in pairs(t) do
 		if (type(v) == 'table') then
-			res[#res + 1] = tableToLua(v)
+			v = tableToLua(v)
 		else
 			if (type(v) == 'string') then
 				v = string.format('%q', v)
@@ -27,7 +27,7 @@ function tableToLua(t)
 		if (type(k) == 'number') then
 			res[#res + 1] = v
 		else
-			res[#res + 1] = k..'='..v
+			res[#res + 1] = k..'='..tostring(v)
 		end
 	end
 

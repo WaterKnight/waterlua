@@ -162,6 +162,10 @@ io.local_dir = function(level)
 end
 
 io.pathExists = function(path)
+	assert(path, 'no path')
+
+	path = path:match('(.*[^\\])')
+
 	return (lfs.attributes(toAbsPath(path, io.local_dir(1))) ~= nil)
 end
 
@@ -263,6 +267,11 @@ string.reduceFolder = function(s, amount)
 end
 
 function getFiles(dir, filePath)
+	assert(dir, 'no dir')
+
+	dir = toFolderPath(dir)
+	filePath = filePath or '*'
+
 	local c = 0
 	local t = {}
 
@@ -528,6 +537,26 @@ function createDir(path)
 	nest(path)
 end
 
+function createFile(path, overwrite)
+	path = toAbsPath(path, io.local_dir(1))
+
+	if not overwrite and io.pathExists(path) then
+		print('createFile: path exists', path)
+
+		return false
+	end
+
+	createDir(getFolder(path))
+
+	local f = io.open(path, "w+b")
+
+	assert(f, 'cannot open '..tostring(path))
+
+	f:close()
+
+	return true
+end
+
 function flushDir(path)
 	assert(path, 'no path')
 
@@ -592,11 +621,14 @@ end
 function syntaxCheck(path)
 	assert(path, 'no path')
 
-	local ring = rings.new()
+	local f, errorMsg = loadfile(path)
 
-	ring:dostring('package.path = '..valToLua(getFolder(path)..'?.lua'))
+	return (errorMsg == nil), errorMsg
+	--local ring = rings.new()
 
-	local res, msg, trace = ring:dostring('require '..valToLua(getFileName(path, true)))
+	--ring:dostring('package.path = '..valToLua(getFolder(path)..'?.lua'))
 
-	return res, msg, trace
+	--local res, msg, trace = ring:dostring('require '..valToLua(getFileName(path, true)))
+
+	--return res, msg, trace
 end
