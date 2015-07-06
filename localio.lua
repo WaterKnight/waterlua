@@ -330,6 +330,9 @@ function copyDir3(source, target)
 end
 
 function copyFile(source, target, overwrite)
+	assert(source, 'no source path')
+	assert(target, 'no target path')
+
 	source = toAbsPath(source, io.local_dir(1))
 	target = toAbsPath(target, io.local_dir(1))
 
@@ -339,7 +342,7 @@ function copyFile(source, target, overwrite)
 		target = target..getFileName(source)
 	end
 
-	if not overwrite and io.pathExists(target) then
+	if (not overwrite and io.pathExists(target)) then
 		print('copyFile: target path exists', target)
 
 		return
@@ -365,15 +368,18 @@ function copyFile(source, target, overwrite)
 end
 
 function copyFileIfNewer(source, target)
+	assert(source, 'no source path')
+	assert(target, 'no target path')
+
 	source = toAbsPath(source, io.local_dir(1))
 	target = toAbsPath(target, io.local_dir(1))
 
 	local targetMod = lfs.attributes(target, 'modification')
 
-	if targetMod then
+	if (targetMod ~= nil) then
 		local sourceMod = lfs.attributes(source, 'modification')
 
-		if (targetMod >= sourceMod) then
+		if ((sourceMod ~= nil) and (targetMod >= sourceMod)) then
 			return
 		end
 	end
