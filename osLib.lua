@@ -6,6 +6,9 @@ local logDetailedPath
 osLib = {}
 
 osLib.pause = function()
+	io.flush(io.stdout)
+	io.flush(io.stderr)
+
 	os.execute('pause')
 end
 

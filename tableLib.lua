@@ -152,7 +152,63 @@ function printTable(t, nestDepth)
 	end
 end
 
-function writeTable(file, root, nestDepth)
+function writeTable(fileOrPath, root, nestDepth)
+	assert(fileOrPath, 'no file/path')
+	assert(root, 'no root')
+
+	local file
+
+	if (type(fileOrPath) == 'string') then
+		file = io.open(fileOrPath, 'w+')
+
+		assert(file, 'cannot open '..tostring(fileOrPath))
+	else
+		file = fileOrPath
+	end
+
+	local recursionTable = {}
+
+	local function writeTable_nest(t, nestDepth)
+		if recursionTable[t] then
+			return
+		end
+
+		recursionTable[t] = t
+
+		for k, v in pairs(t) do
+			if (type(v) == "table") then
+				writeTable_nest(v, nestDepth + 1)
+			else
+				file:write(tostring(v), '\n')
+			end
+		end
+	end
+
+	if (nestDepth == nil) then
+		nestDepth = 0
+	end
+
+	writeTable_nest(root, nestDepth)
+
+	if (type(fileOrPath) == 'string') then
+		file:close()
+	end
+end
+
+function writeTableEx(fileOrPath, root, nestDepth)
+	assert(fileOrPath, 'no file/path')
+	assert(root, 'no root')
+
+	local file
+
+	if (type(fileOrPath) == 'string') then
+		file = io.open(fileOrPath, 'w+')
+
+		assert(file, 'cannot open '..tostring(fileOrPath))
+	else
+		file = fileOrPath
+	end
+
 	local recursionTable = {}
 
 	file:write("contents of ", tostring(root), "\n")
@@ -186,6 +242,10 @@ function writeTable(file, root, nestDepth)
 	end
 
 	writeTable_nest(root, nestDepth)
+
+	if (type(fileOrPath) == 'string') then
+		file:close()
+	end
 end
 
 table.mix = function(t1, t2, sep)

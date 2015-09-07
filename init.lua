@@ -9,10 +9,12 @@ package.cpath = localDir..'?.dll'..';'..packageCPath
 require 'bit'
 require 'rings'
 
+require 'orient'
 
 require 'localio'
 
 require 'configParser'
+require 'dataStructures'
 require 'mathLib'
 require 'osLib'
 require 'stringLib'

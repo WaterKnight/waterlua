@@ -22,12 +22,30 @@ function isInt(val)
 	return (math.floor(val) == val)
 end
 
-function hex2Dec(val)
+math.isInt = function(val)
+	return isInt(val)
+end
+
+function hex2dec(val)
+	assert(val, 'no val')
+
 	return tonumber(val, 16)
 end
 
-function dec2Hex(val)
-	return string.format("%X", val)
+function dec2hex(val, places)
+	assert(val, 'no val')
+
+	if (places == nil) then
+		places = 0
+	end
+
+	local res = string.format("%X", val)
+
+	if (res:len() < places) then
+		res = string.format('%s%s', string.rep('0', places - res:len()), res)
+	end
+
+	return res
 end
 
 function countDigits(val)

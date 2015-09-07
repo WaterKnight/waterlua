@@ -137,6 +137,30 @@ io.curDir = function()
 	return toFolderPath(lfs.currentdir())
 end
 
+io.local_path = function(level)
+	if (level == nil) then
+		level = 0
+	end
+
+	local path = getCallStack()[2 + level].source
+
+	path = path:match('^@(.*)$')
+
+	while ((path:find('.', 1, true) == 1) or (path:find('\\', 1, true) == 1)) do
+		path = path:sub(2)
+	end
+
+	path = path:gsub('/', '\\')
+
+	--path = path:match('(.*\\)') or ''
+
+	if not io.isAbsPath(path) then
+		path = io.curDir()..path
+	end
+
+	return path
+end
+
 io.local_dir = function(level)
 	if (level == nil) then
 		level = 0
@@ -180,7 +204,23 @@ io.pathIsOpenable = function(path)
 
 	local result = (f ~= nil)
 
-	f:close()
+	if result then
+		f:close()
+	end
+
+	return result
+end
+
+io.pathIsWritable = function(path)
+	assert(path, 'no path')
+
+	local f = io.open(path, 'w+')
+
+	local result = (f ~= nil)
+
+	if result then
+		f:close()
+	end
 
 	return result
 end
@@ -575,6 +615,12 @@ function flushDir(path)
 	createDir(path)
 end
 
+io.chdir = function(path)
+	assert(path, 'no path')
+
+	lfs.chdir(path)
+end
+
 io.getGlobal = function(name)
 	local f = io.local_open(name, "r")
 
@@ -630,11 +676,44 @@ function syntaxCheck(path)
 	local f, errorMsg = loadfile(path)
 
 	return (errorMsg == nil), errorMsg
-	--local ring = rings.new()
+	--[[local ring = rings.new()
 
-	--ring:dostring('package.path = '..valToLua(getFolder(path)..'?.lua'))
+	ring:dostring('package.path = '..valToLua(getFolder(path)..'?.lua'))
 
-	--local res, msg, trace = ring:dostring('require '..valToLua(getFileName(path, true)))
+	local res, msg, trace = ring:dostring('require '..valToLua(getFileName(path, true)))
 
-	--return res, msg, trace
+	return res, msg, trace]]
+end
+
+function loadfileSyntaxCheck(path, throwError)
+	assert(path, 'no path')
+
+	local res, errorMsg = syntaxCheck(path)
+
+	if not res then
+		if throwError then
+			error(errorMsg)
+		end
+
+		return nil, errorMsg
+	end
+
+	local f = loadfile(path)
+
+	if (f == nil) then
+		local errorMsg = 'could not open '..tostring(path)
+
+		if throwError then
+			error(errorMsg)
+		end
+
+		return nil, errorMsg
+	end
+
+	return f
+end
+
+function printTrace(s)
+	print(debug.traceback(tostring(s), 2))
+	io.flush(io.stdout)
 end
