@@ -206,6 +206,19 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 		io.setGlobal('success', false)
 
 		os.execute(cmd)
+		--[[local f = io.popen(cmd, 'r')
+
+		local output = f:read('*a')
+
+		print(output)
+
+		f:close()
+
+		local f2 = io.open(io.toAbsPath('hello.txt', io.local_dir()), 'w+')
+
+		f2:write(cmd, '\nOUTPUT:', output, '\n')
+
+		f2:close()]]
 
 		--result = io.getGlobal('success')
 		result = io.pathExists(successFilePath)
