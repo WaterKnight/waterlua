@@ -1,4 +1,6 @@
-function configParser(path)
+local t = {}
+
+local function create(path)
 	assert(path, 'configParser: no path passed')
 
 	path = io.toAbsPath(path, io.local_dir(1))
@@ -22,15 +24,19 @@ function configParser(path)
 	return t
 end
 
+t.create = create
+
 local globalPaths = {}
 
-function getGlobalPath(key)
+local function getGlobalPath(key)
 	assert(key, 'key not set')
 
 	return globalPaths[key]
 end
 
-function setGlobalPath(key, val)
+t.getGlobalPath = getGlobalPath
+
+local function setGlobalPath(key, val)
 	assert(key, 'no key')
 	assert(val, 'no value')
 
@@ -38,3 +44,7 @@ function setGlobalPath(key, val)
 
 	globalPaths[key] = val
 end
+
+t.setGlobalPath = setGlobalPath
+
+configParser = t

@@ -1,18 +1,41 @@
-local params = {...}
+--require 'waterlua'
+
+local t = {}
 
 local log
 local logDetailedPath
 
-osLib = {}
+local function get()
+	local t = package.cpath:split(';')
+	local extension
 
-osLib.pause = function()
+	local i = 1
+
+	while ((extension == nil) and (i <= #t)) do
+		extension = io.getFileExtension(t[i])
+
+		i = i + 1
+	end
+
+	local t = {
+		dll = 'win',
+		so = 'linux',
+		dylib = 'mac'
+	}
+end
+
+t.get = get
+
+local function pause()
 	io.flush(io.stdout)
 	io.flush(io.stderr)
 
 	os.execute('pause')
 end
 
-osLib.createTimer = function()
+t.pause = pause
+
+local function createTimer()
 	local this = {}
 
 	function this:start()
@@ -28,7 +51,9 @@ osLib.createTimer = function()
 	return this
 end
 
-osLib.clearScreen = function()
+t.createTimer = createTimer
+
+local function clearScreen()
 	io.flush(io.stdout)
 	io.flush(io.stderr)
 
@@ -40,7 +65,9 @@ osLib.clearScreen = function()
 	io.flush(io.stderr)
 end
 
-os.setLogPaths = function(path, detailedPath)
+t.clearScreen = clearScreen
+
+local function setLogPaths(path, detailedPath)
 	assert(path, 'no path')
 	assert(detailedPath, 'no detailedPath')
 
@@ -51,9 +78,11 @@ os.setLogPaths = function(path, detailedPath)
 	logDetailedPath = detailedPath
 end
 
+t.setLogPaths = setLogPaths
+
 local tempCallsDir = io.toAbsPath([[tempCalls\]], io.local_dir())
 
-createDir(tempCallsDir)
+io.createDir(tempCallsDir)
 
 --os.execute(string.format('rd 2>NUL %s /s /q', tempCallsDir:quote()))
 --os.execute(string.format('mkdir 2>NUL %s', tempCallsDir:quote()))
@@ -78,11 +107,13 @@ local function toDOS(val)
 	return [["]]..val..[["]]
 end
 
-osLib.ack = function()
+local function ack()
 	io.setGlobal('success', true)
 end
 
-osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
+t.ack = ack
+
+local function run(cmd, args, options, fromFolder, doNotWait, name)
 	cmd = cmd:gsub('/', '\\')
 
 	local fileName = getFileName(cmd)
@@ -159,8 +190,8 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 	local returnOutputFilePath = tempCallsDir..[[outMsg.txt]]
 	local returnErrorMsgFilePath = tempCallsDir..[[errorMsg.txt]]
 
-	removeFile(returnOutputFilePath)
-	removeFile(returnErrorMsgFilePath)
+	io.removeFile(returnOutputFilePath)
+	io.removeFile(returnErrorMsgFilePath)
 
 	cmd = cmd..' 1>'..returnOutputFilePath:quote()..' 2>'..returnErrorMsgFilePath:quote()
 
@@ -265,12 +296,14 @@ osLib.run = function(cmd, args, options, fromFolder, doNotWait, name)
 	return result, errorMsg, outMsg
 end
 
-osLib.waitForKeystroke = function()
+t.run = run
+
+local function waitForKeystroke()
 	local folder = io.local_dir()
 
 	local outPath = folder..'waitForKeystrokeOut.txt'
 
-	removeFile(outPath)
+	io.removeFile(outPath)
 
 	local cmd = 'call '..(folder..'waitForKeystroke.exe'):quote()..' '..outPath:quote()..' >NUL'
 
@@ -287,7 +320,9 @@ osLib.waitForKeystroke = function()
 	return result
 end
 
-osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder)
+t.waitForKeystroke = waitForKeystroke
+
+local function runProg(interpreter, path, args, options, doNotWait, fromFolder)
 	path = io.toAbsPath(path, io.local_dir(1))
 
 	local folder = getFolder(path)
@@ -315,7 +350,7 @@ osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder
 		fromFolder = folder
 	end
 
-	local t = osLib.createTimer()
+	local t = createTimer()
 
 	print('run '..path)
 
@@ -324,9 +359,9 @@ osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder
 	local outMsg = nil
 
 	if interpreter then
-		result, errorMsg, outMsg = osLib.run(interpreter, args, options, fromFolder, doNotWait, nil)
+		result, errorMsg, outMsg = run(interpreter, args, options, fromFolder, doNotWait, nil)
 	else
-		result, errorMsg, outMsg = osLib.run(path, args, options, fromFolder, doNotWait, path)
+		result, errorMsg, outMsg = run(path, args, options, fromFolder, doNotWait, path)
 	end
 
 	if log then
@@ -348,7 +383,9 @@ osLib.runProg = function(interpreter, path, args, options, doNotWait, fromFolder
 	return result, errorMsg, outMsg
 end
 
-osLib.exit = function(val)
+t.runProg = runProg
+
+local function exit(val)
 	if (val == 0) then
 		io.setGlobal('success', true)
 	end
@@ -356,7 +393,13 @@ osLib.exit = function(val)
 	os.exit(val)
 end
 
-osLib.clearTempCalls = function()
-	removeDir(tempCallsDir)
+t.exit = exit
+
+local function clearTempCalls()
+	io.removeDir(tempCallsDir)
 	io.setGlobal('tempC')
 end
+
+t.clearTempCalls = clearTempCalls
+
+expose('osLib', t)

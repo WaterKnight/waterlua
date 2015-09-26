@@ -1,7 +1,9 @@
 require 'lfs'
 require 'stringLib'
 
-function getFileName(path, noExtension)
+local t = {}
+
+local function getFileName(path, noExtension)
 	assert(path, 'no path')
 
 	path = path:gsub('/', '\\')
@@ -15,7 +17,9 @@ function getFileName(path, noExtension)
 	return path
 end
 
-function getFolder(path)
+io.getFileName = getFileName
+
+local function getFolder(path)
 	assert(path, 'no path')
 
 	path = path:gsub('/', '\\')
@@ -25,7 +29,9 @@ function getFolder(path)
 	return path
 end
 
-function getFileExtension(path)
+t.getFolder = getFolder
+
+local function getFileExtension(path)
 	assert(path, 'no path')
 
 	local ext = getFileName(path):sub(getFileName(path, true):len() + 2, path:len())
@@ -37,17 +43,17 @@ function getFileExtension(path)
 	return ext
 end
 
-function getWorkingDir()
-	return io.popen([[cd]]):read("*l")
+t.getFileExtension = getFileExtension
+
+--[[function getWorkingDir()
+	return io.popen('cd'):read('*l')
 end
 
 function getScriptDir()
 	return getFolder(debug.getinfo(1).source:sub(1))
-end
+end]]
 
---
-
-local isAbsPath = function(path)
+local function isAbsPath(path)
 	assert(path, 'no path')
 
 	if path:find(':') then
@@ -57,9 +63,7 @@ local isAbsPath = function(path)
 	return false
 end
 
-io.isAbsPath = function(path)
-	return isAbsPath(path)
-end
+t.isAbsPath = isAbsPath
 
 local function getCallStack()
 	local t = {}
@@ -95,11 +99,9 @@ local function toFolderPath(path, shortened)
 	return path
 end
 
-io.toFolderPath = function(path, shortened)
-	return toFolderPath(path, shortened)
-end
+t.toFolderPath = toFolderPath
 
-local toAbsPath = function(path, basePath)
+local function toAbsPath(path, basePath)
 	assert(path, 'no path')
 
 	path = path:gsub('/', '\\')
@@ -127,17 +129,15 @@ local toAbsPath = function(path, basePath)
 	return result
 end
 
-io.toAbsPath = function(path, basePath)
-	local result = toAbsPath(path, basePath)
+t.toAbsPath = toAbsPath
 
-	return result
-end
-
-io.curDir = function()
+local function curDir()
 	return toFolderPath(lfs.currentdir())
 end
 
-io.local_path = function(level)
+t.curDir = curDir
+
+local function local_path(level)
 	if (level == nil) then
 		level = 0
 	end
@@ -161,7 +161,9 @@ io.local_path = function(level)
 	return path
 end
 
-io.local_dir = function(level)
+t.local_path = local_path
+
+local function local_dir(level)
 	if (level == nil) then
 		level = 0
 	end
@@ -185,7 +187,9 @@ io.local_dir = function(level)
 	return path
 end
 
-io.pathExists = function(path)
+t.local_dir = local_dir
+
+local function pathExists(path)
 	assert(path, 'no path')
 
 	path = path:match('(.*[^\\])')
@@ -193,11 +197,15 @@ io.pathExists = function(path)
 	return (lfs.attributes(toAbsPath(path, io.local_dir(1))) ~= nil)
 end
 
-io.pathIsFile = function(path)
+t.pathExists = pathExists
+
+ local function pathIsFile(path)
 	return (lfs.attributes(toAbsPath(path, io.local_dir(1)), 'mode') == 'file')
 end
 
-io.pathIsOpenable = function(path)
+t.pathIsFile = pathIsFile
+
+ local function pathIsOpenable(path)
 	assert(path, 'no path')
 
 	local f = io.open(path, 'r')
@@ -211,7 +219,9 @@ io.pathIsOpenable = function(path)
 	return result
 end
 
-io.pathIsWritable = function(path)
+t.pathIsOpenable = pathIsOpenable
+
+local function pathIsWritable(path)
 	assert(path, 'no path')
 
 	local f = io.open(path, 'w+')
@@ -225,7 +235,9 @@ io.pathIsWritable = function(path)
 	return result
 end
 
-io.pathIsLocked = function(path)
+t.pathIsWritable = pathIsWritable
+
+local function pathIsLocked(path)
 	if not io.pathExists(path) then
 		return true
 	end
@@ -241,7 +253,9 @@ io.pathIsLocked = function(path)
 	return true
 end
 
-io.local_require = function(path1)
+t.pathIsLocked = pathIsLocked
+
+ local function local_require(path1)
 	local path = toAbsPath(path1, io.local_dir(1))
 
 	if package.loaded[path] then
@@ -259,18 +273,22 @@ io.local_require = function(path1)
 	return result
 end
 
-io.local_open = function(path, options)
+t.local_require = local_require
+
+local function local_open(path, options)
 --print('local_open', path, toAbsPath(path, io.local_dir(1)))
 	return io.open(toAbsPath(path, io.local_dir(1)), options)
 end
 
-io.local_loadfile = function(path)
+t.local_open = local_open
+
+local function local_loadfile(path)
 	return loadfile(toAbsPath(path, io.local_dir(1)))
 end
 
---print(os.getenv('LUA_PATH'):split(';'))
+t.local_loadfile = local_loadfile
 
-function isFolderPath(path)
+local function isFolderPath(path)
 	if (path == '') then
 		return false
 	end
@@ -284,6 +302,8 @@ function isFolderPath(path)
 
 	return true
 end
+
+t.isFolderPath = isFolderPath
 
 string.reduceFolder = function(s, amount)
 	assert(s, 'no path')
@@ -306,7 +326,7 @@ string.reduceFolder = function(s, amount)
 	return string.reduceFolder(dir..fileName, amount - 1)
 end
 
-function getFiles(dir, filePath)
+local function getFiles(dir, filePath)
 	assert(dir, 'no dir')
 
 	dir = toFolderPath(dir)
@@ -327,7 +347,9 @@ function getFiles(dir, filePath)
 	return t
 end
 
-function getScriptDir(level)
+t.getFiles = getFiles
+
+local function getScriptDir(level)
 	if (level == nil) then
 		level = 1
 	end
@@ -335,21 +357,77 @@ function getScriptDir(level)
 	return getFolder(debug.getinfo(level).source:sub(1))
 end
 
-function changeWorkingDir(path)
+t.getScriptDir = getScriptDir
+
+local function changeWorkingDir(path)
 	assert(path, "no path specified")
 
 	os.execute([[cd /d ]]..path:quote())
 end
 
-function moveFile(sourcePath, targetPath)
+t.changeWorkingDir = changeWorkingDir
+
+local function moveFile(sourcePath, targetPath)
 	os.execute(string.format([[move 1>NUL 2>NUL %q %q]], sourcePath, targetPath))
 end
 
-function renameFile(sourcePath, targetPath)
+t.moveFile = moveFile
+
+local function renameFile(sourcePath, targetPath)
 	os.execute(string.format([[rename 1>NUL 2>NUL %q %q]], sourcePath, targetPath))
 end
 
-function copyFile3(source, target)
+t.renameFile = renameFile
+
+local function createDir(path)
+	assert(path, 'no path')
+
+	path = toAbsPath(path, io.local_dir(1))
+
+	assert(isFolderPath(path), 'createDir: path is no directory '..tostring(path))
+
+	local function nest(path)
+		local p = toFolderPath(path, true)
+
+		if ((path == nil) or (path == '') or lfs.mkdir(p)) then
+			return
+		end
+
+		nest(path:reduceFolder())
+
+		local result, errorMsg = lfs.mkdir(p)
+
+		--print('result', result, errorMsg)
+	end
+
+	nest(path)
+end
+
+t.createDir = createDir
+
+local function createFile(path, overwrite)
+	path = toAbsPath(path, io.local_dir(1))
+
+	if not overwrite and io.pathExists(path) then
+		print('createFile: path exists', path)
+
+		return false
+	end
+
+	createDir(getFolder(path))
+
+	local f = io.open(path, "w+b")
+
+	assert(f, 'cannot open '..tostring(path))
+
+	f:close()
+
+	return true
+end
+
+t.creteFile = createFile
+
+local function copyFile3(source, target)
 	local sourceFile = io.open(source, "rb")
 	local targetFile = io.open(target, "w+b")
 
@@ -365,11 +443,15 @@ function copyFile3(source, target)
 	targetFile:close()
 end
 
-function copyDir3(source, target)
+t.copyFile3 = copyFile3
+
+local function copyDir3(source, target)
 	os.execute([[xcopy ]]..source:quote()..[[ ]]..target:quote()..[[ /e /i /y /q]])
 end
 
-function copyFile(source, target, overwrite)
+t.copyDir3 = copyDir3
+
+local function copyFile(source, target, overwrite)
 	assert(source, 'no source path')
 	assert(target, 'no target path')
 
@@ -405,9 +487,13 @@ function copyFile(source, target, overwrite)
 
 	sourceFile:close()
 	targetFile:close()
+
+	return true
 end
 
-function copyFileIfNewer(source, target)
+t.copyFile = copyFile
+
+local function copyFileIfNewer(source, target)
 	assert(source, 'no source path')
 	assert(target, 'no target path')
 
@@ -427,7 +513,9 @@ function copyFileIfNewer(source, target)
 	copyFile(source, target, true)
 end
 
-function copyFile2(source, target)
+t.copyFileIfNewer = copyFileIfNewer
+
+local function copyFile2(source, target)
 	createDir(getFolder(target))
 
 	local sourceFile = io.open(source, "rb")
@@ -442,7 +530,9 @@ function copyFile2(source, target)
 	targetFile:close()
 end
 
-function copyDir2(source, target)
+t.copyFile2 = copyFile2
+
+local function copyDir2(source, target)
 	--os.execute([[xcopy ]]..source:quote()..[[ ]]..target:quote()..[[ /e /i /y /q]])
 	source = io.toAbsPath(source, io.local_dir(1))
 	target = io.toAbsPath(target, io.local_dir(1))
@@ -466,7 +556,9 @@ function copyDir2(source, target)
 	end
 end
 
-function copyDir(source, target, overwrite)
+t.copyDir2 = copyDir2
+
+local function copyDir(source, target, overwrite)
 	--os.execute([[xcopy ]]..source:quote()..[[ ]]..target:quote()..[[ /e /i /y /q]])
 
 	source = toFolderPath(source)
@@ -510,7 +602,9 @@ function copyDir(source, target, overwrite)
 	end
 end
 
-function getFilesEx(path)
+t.copyDir = copyDir
+
+local function getFilesEx(path)
 	path = toAbsPath(path, io.local_dir(1))
 
 	local iter = lfs.dir(path)
@@ -532,13 +626,17 @@ function getFilesEx(path)
 	return t
 end
 
-function removeFile(path)
+t.getFilesEx = getFilesEx
+
+local function removeFile(path)
 	path = toAbsPath(path, io.local_dir(1))
 
 	os.remove(path)
 end
 
-function removeDir(path)
+t.removeFile = removeFile
+
+local function removeDir(path)
 	path = toAbsPath(path, io.local_dir(1))
 
 	assert(isFolderPath(path), 'removeDir: path is no directory '..tostring(path))
@@ -559,51 +657,9 @@ function removeDir(path)
 	nest(path)
 end
 
-function createDir(path)
-	assert(path, 'no path')
+t.removeDir = removeDir
 
-	path = toAbsPath(path, io.local_dir(1))
-
-	assert(isFolderPath(path), 'createDir: path is no directory '..tostring(path))
-
-	local function nest(path)
-		local p = toFolderPath(path, true)
-
-		if ((path == nil) or (path == '') or lfs.mkdir(p)) then
-			return
-		end
-
-		nest(path:reduceFolder())
-
-		local result, errorMsg = lfs.mkdir(p)
-
-		--print('result', result, errorMsg)
-	end
-
-	nest(path)
-end
-
-function createFile(path, overwrite)
-	path = toAbsPath(path, io.local_dir(1))
-
-	if not overwrite and io.pathExists(path) then
-		print('createFile: path exists', path)
-
-		return false
-	end
-
-	createDir(getFolder(path))
-
-	local f = io.open(path, "w+b")
-
-	assert(f, 'cannot open '..tostring(path))
-
-	f:close()
-
-	return true
-end
-
-function flushDir(path)
+local function flushDir(path)
 	assert(path, 'no path')
 
 	path = toAbsPath(path, io.local_dir(1))
@@ -615,13 +671,17 @@ function flushDir(path)
 	createDir(path)
 end
 
-io.chdir = function(path)
+t.flushDir = flushDir
+
+local function chdir(path)
 	assert(path, 'no path')
 
 	lfs.chdir(path)
 end
 
-io.getGlobal = function(name)
+t.chdir = chdir
+
+local function getGlobal(name)
 	local f = io.local_open(name, "r")
 
 	if not f then
@@ -642,7 +702,9 @@ io.getGlobal = function(name)
 	return val
 end
 
-io.setGlobal = function(name, val)
+t.getGlobal = getGlobal
+
+local function setGlobal(name, val)
 	if (val == nil) then
 		removeFile(name)
 
@@ -660,7 +722,9 @@ io.setGlobal = function(name, val)
 	f:close()
 end
 
-io.getFileSize = function(path)
+t.setGlobal = setGlobal
+
+local function getFileSize(path)
 	assert(path, 'no path')
 
 	assert(io.pathExists(path), 'path '..tostring(path)..' does not exist')
@@ -670,7 +734,9 @@ io.getFileSize = function(path)
 	return lfs.attributes(path, 'size')
 end
 
-function syntaxCheck(path)
+t.getFileSize = getFileSize
+
+local function syntaxCheck(path)
 	assert(path, 'no path')
 
 	local f, errorMsg = loadfile(path)
@@ -685,7 +751,9 @@ function syntaxCheck(path)
 	return res, msg, trace]]
 end
 
-function loadfileSyntaxCheck(path, throwError)
+t.syntaxCheck = syntaxCheck
+
+local function loadfileSyntaxCheck(path, throwError)
 	assert(path, 'no path')
 
 	local res, errorMsg = syntaxCheck(path)
@@ -713,7 +781,15 @@ function loadfileSyntaxCheck(path, throwError)
 	return f
 end
 
-function printTrace(s)
+t.loadfileSyntaxCheck = loadfileSyntaxCheck
+
+local function printTrace(s)
 	print(debug.traceback(tostring(s), 2))
 	io.flush(io.stdout)
+end
+
+t.printTrace = printTrace
+
+for k, v in pairs(t) do
+	io[k] = v
 end

@@ -1,4 +1,6 @@
-function totable(t)
+local t = {}
+
+local function create(t)
 	if (t == nil) then
 		return nil
 	end
@@ -10,7 +12,10 @@ function totable(t)
 	return {t}
 end
 
-function tableToLua(t)
+t.create = create
+totable = create
+
+local function toLua(t)
 	local res = {}
 
 	for k, v in pairs(t) do
@@ -34,7 +39,9 @@ function tableToLua(t)
 	return '{'..table.concat(res, ', ')..'}'
 end
 
-function tableContains(t, e)
+t.toLua = toLua
+
+local function contains(t, e)
 	if (t == nil) then
 		return false
 	end
@@ -48,26 +55,18 @@ function tableContains(t, e)
 	return false
 end
 
-function getTableSize(t, nested, recursionTable)
-	assert(t, 'no arg')
+t.contains = contains
 
-	assert((type(t) == 'table'), 'no table')
-
-	if (recursionTable == nil) then
-		recursionTable = {}
-	end
-
-	if recursionTable[t] then
+local function getSize_nest(t, recursionTable)
+	if (recursionTable[t] ~= nil) then
 		return 0
 	end
-
-	recursionTable[t] = t
 
 	local c = 0
 
 	for k, val in pairs(t) do
-		if (nested and (type(val) == "table")) then
-			c = c + getTableSize(val, true, recursionTable) + 1
+		if (type(val) == 'table') then
+			c = c + getTableSize_nest(val, recursionTable) + 1
 		else
 			c = c + 1
 		end
@@ -76,30 +75,42 @@ function getTableSize(t, nested, recursionTable)
 	return c
 end
 
-function copyTable(source, recursionTable)
-	if (recursionTable == nil) then
+local function getSize(t, nested)
+	assert(t, 'no arg')
 
-		recursionTable = {}
+	assert((type(t) == 'table'), 'no table')
+
+	local recursionTable = {}
+
+	recursionTable[t] = t
+
+	local c = 0
+
+	for k, val in pairs(t) do
+		if (nested and (type(val) == 'table')) then
+			c = c + getTableSize_nest(val, recursionTable) + 1
+		else
+			c = c + 1
+		end
 	end
 
-	if recursionTable[source] then
+	return c
+end
 
+t.getSize = getSize
+
+local function copy_nest(source, recursionTable)
+	if recursionTable[source] then
 		return recursionTable[source]
 	end
 
-	local result
-
-	if (source == nil) then
-		return nil
-	end
-
-	result = {}
+	local result = {}
 
 	recursionTable[source] = result
 
 	for k, v in pairs(source) do
 		if (type(v) == "table") then
-			local add = copyTable(v, recursionTable)
+			local add = copy_nest(v, recursionTable)
 
 			if (k == v) then
 				k = add
@@ -114,7 +125,36 @@ function copyTable(source, recursionTable)
 	return result
 end
 
-function mergeTable(source, toAdd)
+local function copy(source)
+	if (source == nil) then
+		return nil
+	end
+
+	local result = {}
+	local recursionTable = {}
+
+	recursionTable[source] = result
+
+	for k, v in pairs(source) do
+		if (type(v) == "table") then
+			local add = copy_nest(v, recursionTable)
+
+			if (k == v) then
+				k = add
+			end
+
+			result[k] = add
+		else
+			result[k] = v
+		end
+	end
+
+	return result
+end
+
+t.copy = copy
+
+local function merge(source, toAdd)
 	for k, v in pairs(toAdd) do
 		if v then
 			if (type(v) == "table") then
@@ -130,12 +170,12 @@ function mergeTable(source, toAdd)
 	end
 end
 
+t.merge = merge
+
 io.local_require('stringLib')
 
-function printTable(t, nestDepth)
-	if (nestDepth == nil) then
-		nestDepth = 0
-	end
+local function printTable(t, nestDepth)
+	nestDepth = nestDepth or 0
 
 	for k, v in pairs(t) do
 		if (type(v) == "table") then
@@ -152,7 +192,9 @@ function printTable(t, nestDepth)
 	end
 end
 
-function writeTable(fileOrPath, root, nestDepth)
+t.print = printTable
+
+local function write(fileOrPath, root, nestDepth)
 	assert(fileOrPath, 'no file/path')
 	assert(root, 'no root')
 
@@ -195,7 +237,9 @@ function writeTable(fileOrPath, root, nestDepth)
 	end
 end
 
-function writeTableEx(fileOrPath, root, nestDepth)
+t.write = write
+
+local function writeEx(fileOrPath, root, nestDepth)
 	assert(fileOrPath, 'no file/path')
 	assert(root, 'no root')
 
@@ -248,7 +292,9 @@ function writeTableEx(fileOrPath, root, nestDepth)
 	end
 end
 
-table.mix = function(t1, t2, sep)
+t.writeEx = writeEx
+
+local function mix(t1, t2, sep)
 	if (sep == nil) then
 		sep = ""
 	end
@@ -262,7 +308,15 @@ table.mix = function(t1, t2, sep)
 	return result
 end
 
-function addToEnv(t)
+t.mix = mix
+
+local function addToEnv(t)
 	setmetatable(t, {__index = _G})
 	setfenv(2, t)
+end
+
+t.addToEnv = addToEnv
+
+for k, v in pairs(t) do
+	table[k] = v
 end

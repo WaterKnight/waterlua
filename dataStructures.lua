@@ -1,6 +1,6 @@
-local dataStructures = {}
+local t = {}
 
-dataStructures.createList = function()
+t.createList = function()
 	local this = {}
 
 	this.head = nil
@@ -192,4 +192,4 @@ dataStructures.createList = function()
 	return this
 end
 
-module_dataStructures = dataStructures
+dataStructures = t
