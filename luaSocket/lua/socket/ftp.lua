@@ -275,6 +275,7 @@ command = socket.protect(function(cmdt)
 end)
 
 get = socket.protect(function(gett)
+print('get')
     if base.type(gett) == "string" then return sget(gett)
     else return tget(gett) end
 end)
