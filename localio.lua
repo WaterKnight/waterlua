@@ -360,7 +360,7 @@ end
 t.getScriptDir = getScriptDir
 
 local function changeWorkingDir(path)
-	assert(path, "no path specified")
+	assert(path, 'no path specified')
 
 	os.execute([[cd /d ]]..path:quote())
 end
@@ -416,7 +416,7 @@ local function createFile(path, overwrite)
 
 	createDir(getFolder(path))
 
-	local f = io.open(path, "w+b")
+	local f = io.open(path, 'w+b')
 
 	assert(f, 'cannot open '..tostring(path))
 
@@ -425,19 +425,19 @@ local function createFile(path, overwrite)
 	return true
 end
 
-t.creteFile = createFile
+t.createFile = createFile
 
 local function copyFile3(source, target)
-	local sourceFile = io.open(source, "rb")
-	local targetFile = io.open(target, "w+b")
+	local sourceFile = io.open(source, 'rb')
+	local targetFile = io.open(target, 'w+b')
 
 	if (targetFile == nil) then
 		os.execute([[mkdir ]]..getFolder(target):quote())
 
-		targetFile = io.open(target, "w+b")
+		targetFile = io.open(target, 'w+b')
 	end
 
-	targetFile:write(sourceFile:read("*a"))
+	targetFile:write(sourceFile:read('*a'))
 
 	sourceFile:close()
 	targetFile:close()
@@ -470,8 +470,8 @@ local function copyFile(source, target, overwrite)
 		return
 	end
 
-	local sourceFile = io.open(source, "rb")
-	local targetFile = io.open(target, "w+b")
+	local sourceFile = io.open(source, 'rb')
+	local targetFile = io.open(target, 'w+b')
 
 	assert(sourceFile, 'copyFile: cannot open source '..tostring(source))
 	assert(targetFile, 'copyFile: cannot open target '..tostring(target))
@@ -518,13 +518,13 @@ t.copyFileIfNewer = copyFileIfNewer
 local function copyFile2(source, target)
 	createDir(getFolder(target))
 
-	local sourceFile = io.open(source, "rb")
-	local targetFile = io.open(target, "w+b")
+	local sourceFile = io.open(source, 'rb')
+	local targetFile = io.open(target, 'w+b')
 
 	assert(sourceFile, 'copyFile: cannot open sourcePath', sourcePath)
 	assert(targetFile, 'copyFile: cannot open targetPath', targetPath)
 
-	targetFile:write(sourceFile:read("*a"))
+	targetFile:write(sourceFile:read('*a'))
 
 	sourceFile:close()
 	targetFile:close()
@@ -682,7 +682,7 @@ end
 t.chdir = chdir
 
 local function getGlobal(name)
-	local f = io.local_open(name, "r")
+	local f = io.local_open(name, 'r')
 
 	if not f then
 		return nil
@@ -715,7 +715,7 @@ local function setGlobal(name, val)
 
 	assert((valType ~= 'table'), 'cannot save table')
 
-	local f = io.local_open(name, "w+")
+	local f = io.local_open(name, 'w+')
 
 	f:write(valType, '\n', tostring(val))
 
