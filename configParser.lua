@@ -46,7 +46,7 @@ local function create()
 				local val = line:sub(posEnd + 1, line:len())
 
 				if ((type(val) == 'string')) then
-					val = val:match('\"(.*)\"')
+					val = val:match('\"(.*)\"') or val
 				end
 
 				if (curSection ~= nil) then
