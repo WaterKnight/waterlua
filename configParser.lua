@@ -1,27 +1,90 @@
 local t = {}
 
-local function create(path)
-	assert(path, 'configParser: no path passed')
+local function create()
+	local this = {}
 
-	path = io.toAbsPath(path, io.local_dir(1))
+	this.assignments = {}
+	this.sections = {}
 
-	local f = io.open(path, 'r')
+	function this:readFromFile(path, ignoreNotFound)
+		assert(path, 'configParser: no path passed')
 
-	assert(f, 'configParser: cannot open file '..tostring(path))
+		local f = io.open(path, 'r')
 
-	local t = {}
+		if (f == nil) then
+			if not ignoreNotFound then
+				error(string.format('configParser: cannot open file %s', tostring(path)))
+			else
+				return false
+			end
+		end
 
-	for line in f:lines() do
-		local pos, posEnd = line:find('=')
+		local curSection = nil
 
-		if pos then
-			t[line:sub(1, pos - 1)] = line:sub(posEnd + 1, line:len())
+		for line in f:lines() do
+			local sectionName = line:match('%['..'([%w%d%p_]*)'..'%]')
+
+			if (sectionName ~= nil) then
+				curSection = this.sections[sectionName]
+
+				if (curSection == nil) then
+					curSection = {}
+
+					this.sections[sectionName] = curSection
+
+					curSection.assignments = {}
+					curSection.lines = {}
+				end
+			elseif (curSection ~= nil) then
+				curSection.lines[#curSection.lines + 1] = line
+			end
+
+			local pos, posEnd = line:find('=')
+
+			if pos then
+				local name = line:sub(1, pos - 1)
+				local val = line:sub(posEnd + 1, line:len())
+
+				if ((type(val) == 'string')) then
+					val = val:match('\"(.*)\"')
+				end
+
+				if (curSection ~= nil) then
+					curSection.assignments[name] = val
+				else
+					this.assignments[name] = val
+				end
+			end
+		end
+
+		f:close()
+
+		return true
+	end
+
+	function this:merge(other)
+		assert(other, 'no other')
+
+		for name, val in pairs(other.assignments) do
+			this.assignments[name] = val
+		end
+
+		for name, otherSection in pairs(other.sections) do
+			local section = this.sections[name]
+
+			if (section == nil) then
+				section = {}
+
+				this.sections[name] = section
+			end
+
+			for name, val in pairs(otherSection.assignments) do
+				section.assignments[name] = val
+			end
 		end
 	end
 
-	f:close()
-
-	return t
+	return this
 end
 
 t.create = create
@@ -47,4 +110,4 @@ end
 
 t.setGlobalPath = setGlobalPath
 
-configParser = t
+expose('configParser', t)
