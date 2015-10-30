@@ -116,8 +116,8 @@ t.ack = ack
 local function run(cmd, args, options, fromFolder, doNotWait, name)
 	cmd = cmd:gsub('/', '\\')
 
-	local fileName = getFileName(cmd)
-	local folder = getFolder(cmd)
+	local folder = io.getFolder(cmd)
+	local fileName = io.getFileName(cmd)
 
 	--if doNotWait then
 	--	cmd = fileName
@@ -325,8 +325,8 @@ t.waitForKeystroke = waitForKeystroke
 local function runProg(interpreter, path, args, options, doNotWait, fromFolder)
 	path = io.toAbsPath(path, io.local_dir(1))
 
-	local folder = getFolder(path)
-	local fileName = getFileName(path)
+	local folder = io.getFolder(path)
+	local fileName = io.getFileName(path)
 
 	if interpreter then
 		if args then
